@@ -241,7 +241,13 @@ namespace KaneLynchLoc
                     switch (xml.NodeType)
                     {
                         case XmlNodeType.Element:
-                            // all our nodes are named node for fun. we figure out the type implicitly (:
+
+                            if (xml.Name == "dummy")
+                            {
+                                // should only be the first node
+                                continue;
+                            }
+
                             if (xml.Name != "node")
                             {
                                 throw new Exception("Horribly wrong!");

@@ -8,7 +8,7 @@ namespace KaneLynchLoc
 {
     class KaneLynchConverter
     {
-        static string version_string = "0.01";
+        static string version_string = "0.02";
 
         string file1, file2;
 

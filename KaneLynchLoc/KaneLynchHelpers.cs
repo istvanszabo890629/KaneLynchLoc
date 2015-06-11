@@ -193,10 +193,14 @@ namespace KaneLynchLoc
 
             XmlWriter xml = XmlWriter.Create(log, xml_settings);
 
+            xml.WriteStartElement("dummy");
+
             foreach (CType child in Children)
             {
                 child.ExportXml(ref xml);
             }
+
+            xml.WriteFullEndElement();
 
             // important step, right here:
             xml.Flush();
