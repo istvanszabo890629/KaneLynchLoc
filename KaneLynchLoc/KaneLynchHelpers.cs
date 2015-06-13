@@ -81,7 +81,8 @@ namespace KaneLynchLoc
         Enum,
         List,
         Number,
-        String
+        String,
+        StringList
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -246,6 +247,31 @@ namespace KaneLynchLoc
         {
             // string data exists between nodes
             xml.WriteString(SValue);
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    class CTypeStringList : CType
+    {
+        public List<string> SValues;
+
+        public CTypeStringList(string _name)
+            : base(CInternalType.StringList, _name)
+        {
+            SValues = new List<string>();
+        }
+
+        protected override void ExportXmlImpl(ref XmlWriter xml)
+        {
+            xml.WriteAttributeString("count", SValues.Count.ToString());
+
+            foreach( string str in SValues )
+            {
+                xml.WriteStartElement("subnode");
+                xml.WriteString(str);
+                xml.WriteFullEndElement();
+            }
         }
     }
 

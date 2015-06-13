@@ -30,7 +30,8 @@ namespace KaneLynchLoc
             Enum = 0x9,
             List = 0x10,
             Number = 0x28,
-            String = 0x29
+            String = 0x29,
+            StringList = 0x2b
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -131,6 +132,33 @@ namespace KaneLynchLoc
                             break;
                         }
 
+                    case Types.StringList:
+                        {
+                            CTypeStringList me = new CTypeStringList(name);
+
+                            string val;
+
+                            using (StringStore tmp = new StringStore().Read(br))
+                            {
+                                val = tmp.Value;
+                                me.SValues.Add(val);
+                                cur_len += tmp.ReadSize;
+                            }
+
+                            using (StringStore tmp = new StringStore().Read(br))
+                            {
+                                val = tmp.Value;
+                                me.SValues.Add(val);
+                                cur_len += tmp.ReadSize;
+                            }
+
+                            // are there any more?
+
+                            last_node = me;
+
+                            break;
+                        }
+
                     case Types.List:
                         {
                             byte Count = br.ReadByte();
@@ -172,7 +200,9 @@ namespace KaneLynchLoc
                         }
 
                     default:
-                        break;
+                        {
+                            throw new Exception("Unknown node type. Please report this file");
+                        }
                 }
             }
 
@@ -234,6 +264,10 @@ namespace KaneLynchLoc
                 // abtract node so we can determine the true node type at a later stage
                 CType last_node = null;
 
+                // dummy count for valid subnodes
+                int expected_subnodes = 0;
+                bool parsing_subnode = false;
+
                 while (xml.Read())
                 {
                     // good info on msdn about this - https://msdn.microsoft.com/en-us/library/cc189056%28v=vs.95%29.aspx
@@ -245,6 +279,14 @@ namespace KaneLynchLoc
                             if (xml.Name == "dummy")
                             {
                                 // should only be the first node
+                                continue;
+                            }
+
+                            if( xml.Name == "subnode" )
+                            {
+                                if (!parsing_subnode) throw new Exception("subnode read error");
+                                expected_subnodes--;
+
                                 continue;
                             }
 
@@ -340,6 +382,27 @@ namespace KaneLynchLoc
                                     }
                                     break;
 
+                                case "StringList":
+                                    {
+                                        var tmp = new CTypeStringList(name);
+
+                                        string count_val = xml.GetAttribute("count");
+
+                                        if (count_val != null)
+                                        {
+                                            expected_subnodes = Convert.ToInt32(count_val);
+
+                                            if( expected_subnodes > 0)
+                                            {
+                                                // mark as parsing subnodes
+                                                parsing_subnode = true;
+                                            }
+                                        }
+
+                                        last_node = tmp;
+                                    }
+                                    break;
+
                                 default:
                                     throw new Exception("Unhandled node type");
 
@@ -382,6 +445,16 @@ namespace KaneLynchLoc
                                     }
                                     break;
 
+                                case CInternalType.StringList:
+                                    {
+                                        if (!parsing_subnode) throw new Exception("subnode string error");
+
+                                        // add the string value to the ctypestringlist
+                                        var last = last_node as CTypeStringList;
+                                        last.SValues.Add(string_val);
+                                    }
+                                    break;
+
                                 default:
                                     {
                                         throw new Exception("Unknown CoreType with string data");
@@ -397,15 +470,27 @@ namespace KaneLynchLoc
                             // must be a child which has just ended??
                             if (last_node == null)
                             {
-                                // parent node ends
-                                child_stack.Pop();
+                                // subnodes have finished
+                                if (parsing_subnode)
+                                {
+                                    parsing_subnode = false;
+                                }
+                                else
+                                {
+                                    // parent node ends
+                                    child_stack.Pop();
+                                }
                             }
                             else
                             {
-                                //if( last_node.CoreType == CInternalType.List )
-                                //{
-                                //    throw new Exception("Ending an unknown element which isn't a child node. Report this file!");
-                                //}
+                                if( last_node.CoreType == CInternalType.StringList && parsing_subnode )
+                                {
+                                    if (expected_subnodes > 0)
+                                    {
+                                        // we expect more subnodes, don't null last_node
+                                        continue;
+                                    }
+                                }
 
                                 // add this as a child of the last (well, first on the stack) parent
                                 child_stack.Peek().Children.Add(last_node);
@@ -561,6 +646,21 @@ namespace KaneLynchLoc
                         n_val.Value = (child as CTypeNumber).IValue;
                         n_val.Write(bw);
                         len += sizeof(int);
+                    }
+
+                    break;
+
+                case CInternalType.StringList:
+
+                    bw.Write((byte)Types.StringList);
+                    len += 1;
+
+                    foreach( string str in (child as CTypeStringList).SValues )
+                    {
+                        var stmp_val = new StringStore();
+                        stmp_val.Value = str;
+                        stmp_val.Write(bw);
+                        len += stmp_val.WriteSize;
                     }
 
                     break;
