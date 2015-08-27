@@ -537,8 +537,8 @@ namespace KaneLynchLoc
                 var root_sizes = new List<int>();
 
                 int root_offset_count = root_count - 1;
-                int first_root_offset = 1 + (root_offset_count * sizeof(int));
-                int last_root_offset = first_root_offset;
+
+                int last_root_offset = 0;
 
                 if (root_offset_count != 0)
                 {
@@ -546,14 +546,15 @@ namespace KaneLynchLoc
                     {
                         int size = br.ReadInt32();
 
-                        root_sizes.Add(size);
+                        root_sizes.Add(size - last_root_offset);
 
-                        // May be calculated wrong. No samples have root_offset_count > 1
-                        last_root_offset += size;
+                        last_root_offset = size;
                     }
                 }
 
-                root_sizes.Add((int)br.BaseStream.Length - last_root_offset);
+                int previous_data_size = 1 + (root_offset_count * sizeof(int)) + last_root_offset;
+
+                root_sizes.Add((int)br.BaseStream.Length - previous_data_size);
 
                 rootChild = new CTypeChild("_root");
 
