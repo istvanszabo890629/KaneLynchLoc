@@ -71,6 +71,19 @@ namespace KaneLynchLoc
             return this;
         }
     }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    struct EndianHelper
+    {
+        public static void Swap(ref int val)
+        {
+            byte[] bytes = BitConverter.GetBytes(val);
+            bytes = bytes.Reverse().ToArray();
+
+            val = BitConverter.ToInt32(bytes, 0);
+        }
+    };
     
     ///////////////////////////////////////////////////////////////////////
 

@@ -7,8 +7,12 @@ For general game format discussions visit [XeNTaX][1].
 
 ## Usage
 
-Run `KaneLynchLoc.exe` from the command-line
-
+    KaneLynchLoc.exe [--console] src_file dst_file
+       console    Export for console
+       src_file   Locale or language export file
+       dst_file   Locale or language export file
+    Locale files must have the extension ".loc"
+    Language export files must have the extension ".xml"
 
 ## Licence
 

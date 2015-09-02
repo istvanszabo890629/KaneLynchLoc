@@ -15,11 +15,19 @@ namespace KaneLynchLoc
 
         CTypeChild rootChild;
 
+        public struct Options
+        {
+            public bool ExportForConsole;
+        }
+
+        Options runtimeOptions;
+
         ///////////////////////////////////////////////////////////////////////
 
-        public KaneLynchLoc()
+        public KaneLynchLoc(Options opts)
         {
             rootChild = null;
+            runtimeOptions = opts;
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -162,7 +170,7 @@ namespace KaneLynchLoc
                     case Types.List:
                         {
                             byte Count = br.ReadByte();
-                            cur_len += 1;
+                            cur_len += sizeof(byte);
 
                             CTypeChild me = new CTypeChild(name);
                             
@@ -222,6 +230,12 @@ namespace KaneLynchLoc
                 for (int i = 0; i < tail_count; ++i)
                 {
                     int ival = br.ReadInt32();
+
+                    // swap the endian
+                    if (runtimeOptions.ExportForConsole)
+                    {
+                        EndianHelper.Swap(ref ival);
+                    }
 
                     last_node.Tail.Add(ival);
                 }
@@ -418,7 +432,15 @@ namespace KaneLynchLoc
 
                                 foreach (string str in _metadata)
                                 {
-                                    last_node.Tail.Add(Convert.ToInt32(str));
+                                    int ival = Convert.ToInt32(str);
+
+                                    // swap the endian
+                                    if (runtimeOptions.ExportForConsole)
+                                    {
+                                        EndianHelper.Swap(ref ival);
+                                    }
+
+                                    last_node.Tail.Add(ival);
                                 }
                             }
 
@@ -611,23 +633,22 @@ namespace KaneLynchLoc
 
             namestr.Write(bw);
 
-            // WHAT ABOUT LENGTH? ANY SPECIAL CHARACTERS THIS WILL FAIL. todo.
             len += namestr.WriteSize;
 
             switch( child.CoreType )
             {
-                case CInternalType.Empty:
-                    bw.Write((byte)Types.Empty);
-                    len += 1;
-                    break;
-
                 case CInternalType.Undefined:
                     throw new Exception("All wrong.");
+
+                case CInternalType.Empty:
+                    bw.Write((byte)Types.Empty);
+                    len += sizeof(byte);
+                    break;
                    
                 case CInternalType.String:
 
                     bw.Write((byte)Types.String);
-                    len += 1;
+                    len += sizeof(byte);
 
                     var s_val = new StringStore();
                     s_val.Value = (child as CTypeString).SValue;
@@ -639,7 +660,7 @@ namespace KaneLynchLoc
                 case CInternalType.Number:
 
                     bw.Write((byte)Types.Number);
-                    len += 1;
+                    len += sizeof(byte);
 
                     if( (child as CTypeNumber).HasValue )
                     {
@@ -654,7 +675,7 @@ namespace KaneLynchLoc
                 case CInternalType.StringList:
 
                     bw.Write((byte)Types.StringList);
-                    len += 1;
+                    len += sizeof(byte);
 
                     foreach( string str in (child as CTypeStringList).SValues )
                     {
@@ -669,7 +690,7 @@ namespace KaneLynchLoc
                 case CInternalType.Enum:
 
                     bw.Write((byte)Types.Enum);
-                    len += 1;
+                    len += sizeof(byte);
 
                     var e_string = new StringStore();
                     e_string.Value = (child as CTypeEnum).SValue;
@@ -686,7 +707,7 @@ namespace KaneLynchLoc
                 case CInternalType.List:
 
                     bw.Write((byte)Types.List);
-                    len += 1;
+                    len += sizeof(byte);
 
                     // nastier.
 
@@ -695,7 +716,7 @@ namespace KaneLynchLoc
                     int count = child_node.Children.Count;
 
                     bw.Write((byte)(count & 0xFF));
-                    len += 1;
+                    len += sizeof(byte);
                     
                     if( count > 0 )
                     {

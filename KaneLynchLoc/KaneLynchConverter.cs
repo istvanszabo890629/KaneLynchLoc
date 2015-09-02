@@ -8,16 +8,29 @@ namespace KaneLynchLoc
 {
     class KaneLynchConverter
     {
-        static string version_string = "0.04";
+        static string version_string = "0.05";
 
         string file1, file2;
+        bool console_mode;
 
         public KaneLynchConverter(string[] args)
         {
-            if (args.Length == 2)
+            file1 = null;
+            file2 = null;
+            console_mode = false;
+           
+
+            if (args.Length == 2 )
             {
                 file1 = args[0];
                 file2 = args[1];
+            }
+            else if( args.Length == 3 )
+            {
+                console_mode = args[0] == "--console";
+
+                file1 = args[1];
+                file2 = args[2];
             }
         }
 
@@ -45,11 +58,12 @@ namespace KaneLynchLoc
         private void ShowInfo()
         {
             Console.WriteLine("Usage:");
-            Console.WriteLine("\tKaneLynchLoc.exe src_file dst_file");
-            Console.WriteLine("\t src_file Locale or language export file");
-            Console.WriteLine("\t dst_file Locale or language export file");
-            Console.WriteLine("\tLocale files must have the extension \".LOC\"");
-            Console.WriteLine("\tLanguage export file must have the extension \".xml\"");
+            Console.WriteLine("\tKaneLynchLoc.exe [--console] src_file dst_file");
+            Console.WriteLine("\t   console    Export for console");
+            Console.WriteLine("\t   src_file   Locale or language export file");
+            Console.WriteLine("\t   dst_file   Locale or language export file");
+            Console.WriteLine("\tLocale files must have the extension \".loc\"");
+            Console.WriteLine("\tLanguage export files must have the extension \".xml\"");
         }
 
         public bool Run()
@@ -74,7 +88,10 @@ namespace KaneLynchLoc
             }
             else
             {
-                KaneLynchLoc loc = new KaneLynchLoc();
+                KaneLynchLoc.Options options;
+                options.ExportForConsole = console_mode;
+
+                KaneLynchLoc loc = new KaneLynchLoc(options);
 
                 bool src_is_xml = (GetExt(file1).ToLower() == "xml");
                 bool dst_is_xml = (GetExt(file2).ToLower() == "xml");
